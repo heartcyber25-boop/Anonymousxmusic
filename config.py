@@ -1,7 +1,29 @@
 from os import getenv
+from urllib.parse import urlparse
 from dotenv import load_dotenv
 
 load_dotenv()
+
+
+def _valid_url(value: str | None, fallback: str) -> str:
+    value = (value or "").strip()
+    if value.startswith("@"):
+        value = f"https://t.me/{value[1:]}"
+    elif value.startswith("t.me/"):
+        value = f"https://{value}"
+    elif value and "://" not in value and " " not in value:
+        value = f"https://t.me/{value.lstrip('/')}"
+
+    parsed = urlparse(value)
+    if (
+        parsed.scheme in {"http", "https"}
+        and parsed.netloc
+        and " " not in value
+        and "\n" not in value
+        and "\r" not in value
+    ):
+        return value
+    return fallback
 
 class Config:
     def __init__(self):
@@ -22,8 +44,12 @@ class Config:
         self.SESSION2 = getenv("SESSION2", None)
         self.SESSION3 = getenv("SESSION3", None)
 
-        self.SUPPORT_CHANNEL = getenv("SUPPORT_CHANNEL", "https://t.me/aresxcores")
-        self.SUPPORT_CHAT = getenv("SUPPORT_CHAT", "https://t.me/zorolegacy")
+        self.SUPPORT_CHANNEL = _valid_url(
+            getenv("SUPPORT_CHANNEL"), "https://t.me/aresxcores"
+        )
+        self.SUPPORT_CHAT = _valid_url(
+            getenv("SUPPORT_CHAT"), "https://t.me/zorolegacy"
+        )
 
         self.AUTO_LEAVE: bool = getenv("AUTO_LEAVE", "False").lower() == "true"
         self.AUTO_END: bool = getenv("AUTO_END", "False").lower() == "true"
@@ -38,9 +64,15 @@ class Config:
             if url and "batbin.me" in url
         ]
         asset_root = "https://raw.githubusercontent.com/heartcyber25-boop/Anonymousxmusic/master/assets"
-        self.DEFAULT_THUMB = getenv("DEFAULT_THUMB", f"{asset_root}/rose-feature-art.png")
-        self.PING_IMG = getenv("PING_IMG", f"{asset_root}/rose-logo.png")
-        self.START_IMG = getenv("START_IMG", f"{asset_root}/rose-banner.png")
+        self.DEFAULT_THUMB = _valid_url(
+            getenv("DEFAULT_THUMB"), f"{asset_root}/rose-feature-art.png"
+        )
+        self.PING_IMG = _valid_url(
+            getenv("PING_IMG"), f"{asset_root}/rose-logo.png"
+        )
+        self.START_IMG = _valid_url(
+            getenv("START_IMG"), f"{asset_root}/rose-banner.png"
+        )
 
     def check(self):
         missing = [
