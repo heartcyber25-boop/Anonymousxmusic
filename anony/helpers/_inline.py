@@ -145,13 +145,13 @@ class Inline:
             ],
             [
                 self.ikb(text="❔ Help", callback_data="help"),
-                self.ikb(text="👑 Owner", url=owner_url),
+                self.ikb(text="🔴 Owner", url=owner_url),
             ],
             [
-                self.ikb(text="📢 Update", url=config.UPDATE_CHANNEL),
-                self.ikb(text="🛟 Support", url=config.SUPPORT_CHAT),
+                self.ikb(text="🟣 Update", url=config.UPDATE_CHANNEL),
+                self.ikb(text="🔴 Support", url=config.SUPPORT_CHAT),
             ],
-            [self.ikb(text="📡 Channel", url=config.SUPPORT_CHANNEL)],
+            [self.ikb(text="🔵 Channel", url=config.SUPPORT_CHANNEL)],
         ]
         return self.ikm(rows)
 

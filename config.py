@@ -53,7 +53,7 @@ class Config:
         self.UPDATE_CHANNEL = _valid_url(
             getenv("UPDATE_CHANNEL"), "https://t.me/updatesxhub"
         )
-        owner_url = getenv("OWNER_URL", "").strip()
+        owner_url = getenv("OWNER_URL", "https://t.me/ik_ares").strip()
         if owner_url.startswith("@"):
             owner_url = f"https://t.me/{owner_url[1:]}"
         if not owner_url.startswith(("http://", "https://", "tg://")) or " " in owner_url:
@@ -80,7 +80,7 @@ class Config:
             getenv("PING_IMG"), f"{asset_root}/rose-logo.png"
         )
         self.START_IMG = _valid_url(
-            getenv("START_IMG"), f"{asset_root}/rose-welcome-premium.png"
+            getenv("START_IMG"), f"{asset_root}/rose-start-whoami.jpg"
         )
 
     def check(self):

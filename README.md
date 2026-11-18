@@ -93,7 +93,7 @@ Copy `.env.example` to `.env` for local use, or define the same variables in Rai
 | `SUPPORT_CHAT` | No | Support button and support link. Default: `https://t.me/aresxcores`. |
 | `SUPPORT_CHANNEL` | No | Channel button link. Default: `https://t.me/zorolegacy`. |
 | `UPDATE_CHANNEL` | No | Update button link. Default: `https://t.me/updatesxhub`. |
-| `OWNER_URL` | No | Optional owner button URL. If empty, the button targets `OWNER_ID` with a Telegram user deep link. |
+| `OWNER_URL` | No | Owner button URL. Default: `https://t.me/ik_ares`. |
 | `DURATION_LIMIT` | No | Maximum track length in minutes; default `60`. |
 | `QUEUE_LIMIT` | No | Maximum queued tracks per chat; default `20`. |
 | `PLAYLIST_LIMIT` | No | Maximum playlist tracks accepted; default `20`. |
@@ -105,7 +105,7 @@ Copy `.env.example` to `.env` for local use, or define the same variables in Rai
 | `COOKIES_URL` | Recommended for YouTube | Space-separated `batbin.me` cookie URLs. YouTube may require exported browser cookies when it returns “Sign in to confirm you’re not a bot”; this is especially common on Railway/cloud IPs. |
 | `DEFAULT_THUMB` | No | Fallback thumbnail URL. |
 | `PING_IMG` | No | Image URL used by ping/status responses. |
-| `START_IMG` | No | Image URL used by the premium `/start` panel. Defaults to the ROSE MUSIC welcome artwork. |
+| `START_IMG` | No | Image URL used by the `/start` panel. Defaults to the ROSE MUSIC “Who am I?” starting image. |
 
 Never commit `.env`, bot tokens, API keys, session strings, passwords, or cookie files. `.gitignore` already excludes the local secret and session patterns.
 
