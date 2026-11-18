@@ -1,7 +1,7 @@
 {
-    "name": "AnonX Music",
-    "description": "A Telegram Music Player Bot, written in Python with Pyrogram and Py-Tgcalls.",
-    "logo": "https://te.legra.ph/file/b8a0c1a00db3e57522b53.jpg",
+    "name": "ROSE MUSIC",
+    "description": "Premium Telegram group voice-chat music bot, written in Python.",
+    "logo": "https://raw.githubusercontent.com/heartcyber25-boop/Anonymousxmusic/master/assets/rose-logo.png",
     "keywords": ["python3", "telegram", "bot", "music-bot"],
     "stack": "container",
     "env": {

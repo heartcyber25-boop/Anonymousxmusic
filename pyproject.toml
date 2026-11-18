@@ -1,8 +1,8 @@
 [project]
-name = "anonxmusic"
+name = "rose-music"
 version = "3.0.3"
-description = "Telegram Group Calls Streaming bot with some useful features."
-readme = ".github/README.md"
+description = "Premium Telegram group voice-chat music bot."
+readme = "README.md"
 requires-python = ">=3.11"
 
 dependencies = [

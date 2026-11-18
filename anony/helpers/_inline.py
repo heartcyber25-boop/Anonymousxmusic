@@ -1,6 +1,6 @@
 # Copyright (c) 2025 AnonymousX1025
 # Licensed under the MIT License.
-# This file is part of AnonXMusic
+# This file is part of ROSE MUSIC
 
 
 from pyrogram import types
@@ -153,7 +153,7 @@ class Inline:
                 [
                     self.ikb(
                         text=lang["source"],
-                        url="https://github.com/AnonymousX1025/AnonXMusic",
+                        url="https://github.com/AnonymousX1025/ROSE MUSIC",
                     )
                 ]
             ]

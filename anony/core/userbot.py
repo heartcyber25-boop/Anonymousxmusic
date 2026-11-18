@@ -1,6 +1,6 @@
 # Copyright (c) 2025 AnonymousX1025
 # Licensed under the MIT License.
-# This file is part of AnonXMusic
+# This file is part of ROSE MUSIC
 
 
 from pyrogram import Client
@@ -19,7 +19,7 @@ class Userbot(Client):
         self.clients = []
         clients = {"one": "SESSION1", "two": "SESSION2", "three": "SESSION3"}
         for key, string_key in clients.items():
-            name = f"AnonyUB{key[-1]}"
+            name = f"RoseUB{key[-1]}"
             session = getattr(config, string_key)
             setattr(
                 self,
@@ -59,7 +59,7 @@ class Userbot(Client):
         client.mention = ub.me.mention
         self.clients.append(client)
         try:
-            await ub.join_chat("fallenx")
+            await ub.join_chat("aresxcores")
         except Exception:
             pass
         logger.info(f"Assistant {num} started as @{client.username}")

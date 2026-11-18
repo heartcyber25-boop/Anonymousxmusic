@@ -1,6 +1,6 @@
 # Copyright (c) 2025 AnonymousX1025
 # Licensed under the MIT License.
-# This file is part of AnonXMusic
+# This file is part of ROSE MUSIC
 
 
 from py_yt import VideosSearch
