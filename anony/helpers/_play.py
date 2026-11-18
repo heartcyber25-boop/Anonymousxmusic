@@ -116,6 +116,12 @@ def checkUB(play):
             except Exception:
                 pass
 
-        return await play(_, m, force, m3u8, video, url)
+        try:
+            return await play(_, m, force, m3u8, video, url)
+        except Exception as ex:
+            logger.exception("Playback handler failed in chat %s: %s", chat_id, ex)
+            return await m.reply_text(
+                m.lang["error_no_file"].format(config.SUPPORT_CHAT)
+            )
 
     return wrapper

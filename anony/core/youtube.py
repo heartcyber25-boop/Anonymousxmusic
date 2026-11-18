@@ -140,6 +140,7 @@ class YouTube:
             "nocheckcertificate": True,
             "cookiefile": cookie,
             "remote_components": ["ejs:github"],
+            "js_runtimes": {"deno": {}},
         }
 
         if video:
@@ -158,7 +159,13 @@ class YouTube:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 try:
                     ydl.download([url])
-                except (yt_dlp.utils.DownloadError, yt_dlp.utils.ExtractorError):
+                except (yt_dlp.utils.DownloadError, yt_dlp.utils.ExtractorError) as ex:
+                    logger.warning(
+                        "YouTube download failed for %s: %s. "
+                        "If YouTube asks for sign-in, configure COOKIES_URL.",
+                        video_id,
+                        ex,
+                    )
                     return None
                 except Exception as ex:
                     logger.warning("Download failed: %s", ex)

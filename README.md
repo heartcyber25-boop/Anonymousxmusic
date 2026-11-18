@@ -100,7 +100,7 @@ Copy `.env.example` to `.env` for local use, or define the same variables in Rai
 | `THUMB_GEN` | No | Generate thumbnails; default `True`. |
 | `VIDEO_PLAY` | No | Enable video playback; default `True`. |
 | `LANG_CODE` | No | Default locale code; default `en`. |
-| `COOKIES_URL` | No | Space-separated approved cookie URLs containing `batbin.me`. |
+| `COOKIES_URL` | Recommended for YouTube | Space-separated `batbin.me` cookie URLs. YouTube may require exported browser cookies when it returns “Sign in to confirm you’re not a bot”; this is especially common on Railway/cloud IPs. |
 | `DEFAULT_THUMB` | No | Fallback thumbnail URL. |
 | `PING_IMG` | No | Image URL used by ping/status responses. |
 | `START_IMG` | No | Image URL used by the `/start` panel. |
@@ -153,6 +153,7 @@ start                Local/container startup command
 - **Logger access failure:** add the bot to the logger chat and grant the required permissions.
 - **Assistant cannot join:** ensure the string session is valid and the assistant account can join group video chats.
 - **No playback:** install/verify FFmpeg and Deno for local deployments, then check yt-dlp/network access.
+- **YouTube sign-in or bot-check error:** export a Netscape-format YouTube cookies file, upload it to a private/controlled `batbin.me` raw URL, and set `COOKIES_URL` in Railway. The bot logs the exact yt-dlp failure and returns a clean message instead of crashing.
 - **MongoDB errors:** verify the URI, Atlas network access, and database user permissions.
 - **Old commands or links in a deployment:** pull the latest commit and restart the worker so the updated locales and configuration defaults load.
 

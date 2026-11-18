@@ -5,7 +5,7 @@
 import asyncio
 from pyrogram import enums, filters, types
 
-from anony import app, config, db, lang
+from anony import app, config, db, lang, logger
 from anony.helpers import buttons, utils
 
 
@@ -36,12 +36,16 @@ async def start(_, message: types.Message):
     )
 
     key = buttons.start_key(message.lang, private)
-    await message.reply_photo(
-        photo=config.START_IMG,
-        caption=_text,
-        reply_markup=key,
-        quote=not private,
-    )
+    try:
+        await message.reply_photo(
+            photo=config.START_IMG,
+            caption=_text,
+            reply_markup=key,
+            quote=not private,
+        )
+    except Exception as ex:
+        logger.exception("Start panel failed in chat %s: %s", message.chat.id, ex)
+        await message.reply_text(_text, quote=not private)
 
     if private:
         if await db.is_user(message.from_user.id):
