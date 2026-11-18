@@ -135,30 +135,24 @@ class Inline:
     def start_key(
         self, lang: dict, private: bool = False
     ) -> types.InlineKeyboardMarkup:
+        owner_url = config.OWNER_URL or f"tg://user?id={config.OWNER_ID}"
         rows = [
             [
                 self.ikb(
-                    text=lang["add_me"],
+                    text="🌹 Add me to your group",
                     url=f"https://t.me/{app.username}?startgroup=true",
                 )
             ],
-            [self.ikb(text=lang["help"], callback_data="help")],
             [
-                self.ikb(text=lang["support"], url=config.SUPPORT_CHAT),
-                self.ikb(text=lang["channel"], url=config.SUPPORT_CHANNEL),
+                self.ikb(text="❔ Help", callback_data="help"),
+                self.ikb(text="👑 Owner", url=owner_url),
             ],
+            [
+                self.ikb(text="📢 Update", url=config.UPDATE_CHANNEL),
+                self.ikb(text="🛟 Support", url=config.SUPPORT_CHAT),
+            ],
+            [self.ikb(text="📡 Channel", url=config.SUPPORT_CHANNEL)],
         ]
-        if private:
-            rows += [
-                [
-                    self.ikb(
-                        text=lang["source"],
-                        url="https://github.com/heartcyber25-boop/Anonymousxmusic",
-                    )
-                ]
-            ]
-        else:
-            rows += [[self.ikb(text=lang["language"], callback_data="language")]]
         return self.ikm(rows)
 
     def yt_key(self, link: str) -> types.InlineKeyboardMarkup:

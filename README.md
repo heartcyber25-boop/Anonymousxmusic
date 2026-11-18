@@ -90,8 +90,10 @@ Copy `.env.example` to `.env` for local use, or define the same variables in Rai
 | `OWNER_ID` | Yes | Numeric Telegram user ID of the bot owner. |
 | `SESSION` | Yes | Primary assistant string session. |
 | `SESSION2` / `SESSION3` | No | Additional assistant sessions. |
-| `SUPPORT_CHANNEL` | No | Link shown by bot buttons. Defaults to the ROSE MUSIC channel. |
-| `SUPPORT_CHAT` | No | Support link used in bot messages. Defaults to the ROSE MUSIC support group. |
+| `SUPPORT_CHAT` | No | Support button and support link. Default: `https://t.me/aresxcores`. |
+| `SUPPORT_CHANNEL` | No | Channel button link. Default: `https://t.me/zorolegacy`. |
+| `UPDATE_CHANNEL` | No | Update button link. Default: `https://t.me/updatesxhub`. |
+| `OWNER_URL` | No | Optional owner button URL. If empty, the button targets `OWNER_ID` with a Telegram user deep link. |
 | `DURATION_LIMIT` | No | Maximum track length in minutes; default `60`. |
 | `QUEUE_LIMIT` | No | Maximum queued tracks per chat; default `20`. |
 | `PLAYLIST_LIMIT` | No | Maximum playlist tracks accepted; default `20`. |
@@ -103,7 +105,7 @@ Copy `.env.example` to `.env` for local use, or define the same variables in Rai
 | `COOKIES_URL` | Recommended for YouTube | Space-separated `batbin.me` cookie URLs. YouTube may require exported browser cookies when it returns “Sign in to confirm you’re not a bot”; this is especially common on Railway/cloud IPs. |
 | `DEFAULT_THUMB` | No | Fallback thumbnail URL. |
 | `PING_IMG` | No | Image URL used by ping/status responses. |
-| `START_IMG` | No | Image URL used by the `/start` panel. |
+| `START_IMG` | No | Image URL used by the premium `/start` panel. Defaults to the ROSE MUSIC welcome artwork. |
 
 Never commit `.env`, bot tokens, API keys, session strings, passwords, or cookie files. `.gitignore` already excludes the local secret and session patterns.
 
@@ -122,7 +124,7 @@ uv sync --frozen
 bash start
 ```
 
-Add ROSE MUSIC to a Telegram supergroup, promote it with the permissions required for voice-chat operation, and start a video chat before using playback commands.
+Add ROSE MUSIC to a Telegram supergroup, promote it with the permissions required for voice-chat operation, and start a video chat before using playback commands. The `/start` welcome panel uses the same premium artwork and button layout in private chats and groups: Help, Owner, Update, Support, and Channel.
 
 ## Railway deployment
 

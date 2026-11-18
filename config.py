@@ -44,12 +44,21 @@ class Config:
         self.SESSION2 = getenv("SESSION2", None)
         self.SESSION3 = getenv("SESSION3", None)
 
-        self.SUPPORT_CHANNEL = _valid_url(
-            getenv("SUPPORT_CHANNEL"), "https://t.me/aresxcores"
-        )
         self.SUPPORT_CHAT = _valid_url(
-            getenv("SUPPORT_CHAT"), "https://t.me/zorolegacy"
+            getenv("SUPPORT_CHAT"), "https://t.me/aresxcores"
         )
+        self.SUPPORT_CHANNEL = _valid_url(
+            getenv("SUPPORT_CHANNEL"), "https://t.me/zorolegacy"
+        )
+        self.UPDATE_CHANNEL = _valid_url(
+            getenv("UPDATE_CHANNEL"), "https://t.me/updatesxhub"
+        )
+        owner_url = getenv("OWNER_URL", "").strip()
+        if owner_url.startswith("@"):
+            owner_url = f"https://t.me/{owner_url[1:]}"
+        if not owner_url.startswith(("http://", "https://", "tg://")) or " " in owner_url:
+            owner_url = ""
+        self.OWNER_URL = owner_url
 
         self.AUTO_LEAVE: bool = getenv("AUTO_LEAVE", "False").lower() == "true"
         self.AUTO_END: bool = getenv("AUTO_END", "False").lower() == "true"
@@ -71,7 +80,7 @@ class Config:
             getenv("PING_IMG"), f"{asset_root}/rose-logo.png"
         )
         self.START_IMG = _valid_url(
-            getenv("START_IMG"), f"{asset_root}/rose-banner.png"
+            getenv("START_IMG"), f"{asset_root}/rose-welcome-premium.png"
         )
 
     def check(self):
