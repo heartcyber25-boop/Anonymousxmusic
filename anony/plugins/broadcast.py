@@ -3,8 +3,8 @@
 # This file is part of ROSE MUSIC
 
 
-import os
 import asyncio
+from pathlib import Path
 
 from pyrogram import errors, filters, types
 
@@ -35,6 +35,7 @@ async def _broadcast(_, message: types.Message):
 
     chats = list(groups | users)
     failed = None
+    failed_path = Path(f"broadcast_errors_{message.id}.txt")
 
     async with broadcasting:
         for chat in chats:
@@ -63,12 +64,12 @@ async def _broadcast(_, message: types.Message):
                 except Exception as retry_ex:
                     logger.warning("Broadcast retry failed for %s: %s", chat, retry_ex)
                     if not failed:
-                        failed = open("errors.txt", "w")
+                        failed = failed_path.open("w", encoding="utf-8")
                     failed.write(f"{chat} - retry: {retry_ex}\n")
             except Exception as ex:
                 logger.warning("Broadcast failed for %s: %s", chat, ex)
                 if not failed:
-                    failed = open("errors.txt", "w")
+                    failed = failed_path.open("w", encoding="utf-8")
                 failed.write(f"{chat} - {ex}\n")
                 continue
 
@@ -76,10 +77,12 @@ async def _broadcast(_, message: types.Message):
     if failed:
         failed.close()
         await message.reply_document(
-            document="errors.txt",
+            document=str(failed_path),
             caption=text,
         )
-        try: os.remove("errors.txt")
-        except Exception: pass
+        try:
+            failed_path.unlink()
+        except OSError:
+            pass
 
     await sent.edit_text(text)

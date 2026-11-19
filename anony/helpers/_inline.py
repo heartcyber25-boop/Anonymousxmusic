@@ -106,6 +106,8 @@ class Inline:
     def settings_markup(
         self, lang: dict, admin_only: bool, cmd_delete: bool, language: str, chat_id: int
     ) -> types.InlineKeyboardMarkup:
+        on = "✅ ON"
+        off = "❌ OFF"
         return self.ikm(
             [
                 [
@@ -113,14 +115,14 @@ class Inline:
                         text=lang["play_mode"] + " ➜",
                         callback_data="settings",
                     ),
-                    self.ikb(text=admin_only, callback_data="settings play"),
+                    self.ikb(text=on if admin_only else off, callback_data="settings play"),
                 ],
                 [
                     self.ikb(
                         text=lang["cmd_delete"] + " ➜",
                         callback_data="settings",
                     ),
-                    self.ikb(text=cmd_delete, callback_data="settings delete"),
+                    self.ikb(text=on if cmd_delete else off, callback_data="settings delete"),
                 ],
                 [
                     self.ikb(

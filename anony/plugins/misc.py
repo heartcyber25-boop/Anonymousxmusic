@@ -12,10 +12,10 @@ from anony import anon, app, config, db, lang, queue, tasks, userbot, yt
 from anony.helpers import buttons
 
 
-@app.on_message(filters.video_chat_started, group=19)
 @app.on_message(filters.video_chat_ended, group=20)
 async def _watcher_vc(_, m: types.Message):
-    await anon.stop(m.chat.id)
+    if await db.get_call(m.chat.id):
+        await anon.stop(m.chat.id)
 
 
 async def auto_leave():
@@ -108,14 +108,15 @@ async def vc_watcher(sleep=15):
     while True:
         await asyncio.sleep(sleep)
         for chat_id in list(db.active_calls):
-            client = await db.get_assistant(chat_id)
-            media = queue.get_current(chat_id)
-            if not media:
-                continue
-            participants = await client.get_participants(chat_id)
-            if len(participants) < 2 and media.time > 30:
-                _lang = await lang.get_lang(chat_id)
-                try:
+            try:
+                client = await db.get_assistant(chat_id)
+                media = queue.get_current(chat_id)
+                if not media:
+                    await anon.stop(chat_id)
+                    continue
+                participants = await client.get_participants(chat_id)
+                if len(participants) < 2 and media.time > 30:
+                    _lang = await lang.get_lang(chat_id)
                     sent = await app.edit_message_reply_markup(
                         chat_id=chat_id,
                         message_id=media.message_id,
@@ -125,13 +126,23 @@ async def vc_watcher(sleep=15):
                     )
                     await anon.stop(chat_id)
                     await sent.reply_text(_lang["auto_left"])
-                except errors.MessageIdInvalid:
-                    pass
+            except errors.MessageIdInvalid:
+                continue
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                continue
 
 
-if config.AUTO_END:
-    tasks.append(asyncio.create_task(vc_watcher()))
-if config.AUTO_LEAVE:
-    tasks.append(asyncio.create_task(auto_leave()))
-tasks.append(asyncio.create_task(track_time()))
-tasks.append(asyncio.create_task(update_timer()))
+try:
+    _loop = asyncio.get_running_loop()
+except RuntimeError:
+    _loop = None
+
+if _loop:
+    if config.AUTO_END:
+        tasks.append(_loop.create_task(vc_watcher()))
+    if config.AUTO_LEAVE:
+        tasks.append(_loop.create_task(auto_leave()))
+    tasks.append(_loop.create_task(track_time()))
+    tasks.append(_loop.create_task(update_timer()))

@@ -10,6 +10,7 @@ import random
 import asyncio
 import aiohttp
 from pathlib import Path
+from urllib.parse import urlparse
 
 from py_yt import Playlist, VideosSearch
 
@@ -60,13 +61,15 @@ class YouTube:
 
     async def save_cookies(self, urls: list[str]) -> None:
         logger.info("Saving cookies from urls...")
+        Path(self.cookie_dir).mkdir(parents=True, exist_ok=True)
         async with aiohttp.ClientSession() as session:
-            for url in urls:
-                name = url.split("/")[-1]
-                link = "https://batbin.me/raw/" + name
-                async with session.get(link) as resp:
+            for index, url in enumerate(urls, start=1):
+                name = Path(urlparse(url).path).name or f"cookies-{index}.txt"
+                if not name.endswith(".txt"):
+                    name += ".txt"
+                async with session.get(url) as resp:
                     resp.raise_for_status()
-                    with open(f"{self.cookie_dir}/{name}.txt", "wb") as fw:
+                with open(f"{self.cookie_dir}/{name}", "wb") as fw:
                         fw.write(await resp.read())
         logger.info(f"Cookies saved in {self.cookie_dir}.")
 
@@ -80,7 +83,8 @@ class YouTube:
         try:
             _search = VideosSearch(query, limit=1, with_live=False)
             results = await _search.next()
-        except Exception:
+        except Exception as ex:
+            logger.warning("YouTube search failed for %r: %s", query, ex)
             return None
         if results and results["result"]:
             data = results["result"][0]
@@ -116,17 +120,20 @@ class YouTube:
                     video=video,
                 )
                 tracks.append(track)
-        except Exception:
+        except Exception as ex:
+            logger.warning("YouTube playlist failed for %s: %s", url, ex)
             pass
         return tracks
 
     async def download(self, video_id: str, video: bool = False) -> str | None:
         url = self.base + video_id
-        ext = "mp4" if video else "webm"
-        filename = f"downloads/{video_id}.{ext}"
+        expected_ext = "mp4" if video else "webm"
+        filename = f"downloads/{video_id}.{expected_ext}"
 
-        if Path(filename).exists():
-            return filename
+        existing = list(Path("downloads").glob(f"{video_id}.*"))
+        existing = [p for p in existing if p.suffix not in {".part", ".ytdl"}]
+        if existing:
+            return str(existing[0])
 
         cookie = self.get_cookies()
         base_opts = {
@@ -152,7 +159,7 @@ class YouTube:
         else:
             ydl_opts = {
                 **base_opts,
-                "format": "bestaudio[ext=webm][acodec=opus]",
+                "format": "bestaudio[acodec=opus]/bestaudio",
             }
 
         def _download():
@@ -170,6 +177,10 @@ class YouTube:
                 except Exception as ex:
                     logger.warning("Download failed: %s", ex)
                     return None
-            return filename
+            downloaded = list(Path("downloads").glob(f"{video_id}.*"))
+            downloaded = [
+                p for p in downloaded if p.suffix not in {".part", ".ytdl"}
+            ]
+            return str(downloaded[0]) if downloaded else None
 
         return await asyncio.to_thread(_download)

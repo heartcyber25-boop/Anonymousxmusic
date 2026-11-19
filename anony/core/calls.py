@@ -23,19 +23,23 @@ class TgCall(PyTgCalls):
 
     async def pause(self, chat_id: int) -> bool:
         client = await db.get_assistant(chat_id)
-        await db.playing(chat_id, paused=True)
         try:
-            return await client.pause(chat_id)
+            await client.pause(chat_id)
+            await db.playing(chat_id, paused=True)
+            return True
         except (ConnectionNotFound, exceptions.NotInCallError):
             await self.stop(chat_id)
+            return False
 
     async def resume(self, chat_id: int) -> bool:
         client = await db.get_assistant(chat_id)
-        await db.playing(chat_id, paused=False)
         try:
-            return await client.resume(chat_id)
+            await client.resume(chat_id)
+            await db.playing(chat_id, paused=False)
+            return True
         except (ConnectionNotFound, exceptions.NotInCallError):
             await self.stop(chat_id)
+            return False
 
     async def stop(self, chat_id: int) -> None:
         client = await db.get_assistant(chat_id)
@@ -56,7 +60,11 @@ class TgCall(PyTgCalls):
         media: Media | Track,
         seek_time: int = 0,
     ) -> None:
-        client = await db.get_assistant(chat_id)
+        try:
+            client = await db.get_assistant(chat_id)
+        except Exception as ex:
+            logger.exception("Assistant lookup failed in chat %s: %s", chat_id, ex)
+            return
         _lang = await lang.get_lang(chat_id)
         _thumb = (
             await thumb.generate(media)
@@ -138,6 +146,13 @@ class TgCall(PyTgCalls):
         except RTMPStreamingUnsupported:
             await self.stop(chat_id)
             await message.edit_text(_lang["error_rtmp"])
+        except Exception as ex:
+            logger.exception("Unexpected playback failure in chat %s: %s", chat_id, ex)
+            await self.stop(chat_id)
+            try:
+                await message.edit_text(_lang["error_no_file"].format(config.SUPPORT_CHAT))
+            except Exception:
+                pass
 
 
     async def replay(self, chat_id: int) -> None:
@@ -145,6 +160,8 @@ class TgCall(PyTgCalls):
             return
 
         media = queue.get_current(chat_id)
+        if not media:
+            return await self.stop(chat_id)
         _lang = await lang.get_lang(chat_id)
         msg = await app.send_message(chat_id=chat_id, text=_lang["play_again"])
         media.message_id = msg.id
@@ -157,6 +174,9 @@ class TgCall(PyTgCalls):
             return await self.replay(chat_id)
 
         media = queue.get_next(chat_id)
+        if not media:
+            return await self.stop(chat_id)
+
         try:
             if media.message_id:
                 await app.delete_messages(
@@ -167,9 +187,6 @@ class TgCall(PyTgCalls):
                 media.message_id = 0
         except Exception:
             pass
-
-        if not media:
-            return await self.stop(chat_id)
 
         _lang = await lang.get_lang(chat_id)
         msg = await app.send_message(chat_id=chat_id, text=_lang["play_next"])
@@ -187,22 +204,25 @@ class TgCall(PyTgCalls):
 
     async def ping(self) -> float:
         pings = [client.ping for client in self.clients]
-        return round(sum(pings) / len(pings), 2)
+        return round(sum(pings) / len(pings), 2) if pings else 0.0
 
 
     async def decorators(self, client: PyTgCalls) -> None:
         @client.on_update()
         async def update_handler(_, update: types.Update) -> None:
-            if isinstance(update, types.StreamEnded):
-                if update.stream_type == types.StreamEnded.Type.AUDIO:
-                    await self.play_next(update.chat_id)
-            elif isinstance(update, types.ChatUpdate):
-                if update.status in [
-                    types.ChatUpdate.Status.KICKED,
-                    types.ChatUpdate.Status.LEFT_GROUP,
-                    types.ChatUpdate.Status.CLOSED_VOICE_CHAT,
-                ]:
-                    await self.stop(update.chat_id)
+            try:
+                if isinstance(update, types.StreamEnded):
+                    if update.stream_type == types.StreamEnded.Type.AUDIO:
+                        await self.play_next(update.chat_id)
+                elif isinstance(update, types.ChatUpdate):
+                    if update.status in [
+                        types.ChatUpdate.Status.KICKED,
+                        types.ChatUpdate.Status.LEFT_GROUP,
+                        types.ChatUpdate.Status.CLOSED_VOICE_CHAT,
+                    ]:
+                        await self.stop(update.chat_id)
+            except Exception as ex:
+                logger.exception("PyTgCalls update failed: %s", ex)
 
 
     async def boot(self) -> None:
@@ -213,3 +233,12 @@ class TgCall(PyTgCalls):
             self.clients.append(client)
             await self.decorators(client)
         logger.info("PyTgCalls client(s) started.")
+
+    async def exit(self) -> None:
+        for client in self.clients:
+            try:
+                await client.stop()
+            except Exception:
+                pass
+        self.clients.clear()
+        logger.info("PyTgCalls clients stopped.")

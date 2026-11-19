@@ -11,19 +11,27 @@ from anony import anon, app, db, lang, queue, tg, yt
 from anony.helpers import admin_check, buttons, can_manage_vc
 
 
-@app.on_callback_query(filters.regex("cancel_dl") & ~app.bl_users)
+@app.on_callback_query(filters.regex(r"^cancel_dl$") & ~app.bl_users)
 @lang.language()
 async def cancel_dl(_, query: types.CallbackQuery):
     await query.answer()
     await tg.cancel(query)
 
 
-@app.on_callback_query(filters.regex("controls") & ~app.bl_users)
+@app.on_callback_query(filters.regex(r"^controls\s+") & ~app.bl_users)
 @lang.language()
 @can_manage_vc
 async def _controls(_, query: types.CallbackQuery):
     args = query.data.split()
-    action, chat_id = args[1], int(args[2])
+    if len(args) < 3:
+        return await query.answer(query.lang["play_expired"], show_alert=True)
+    action = args[1]
+    try:
+        chat_id = int(args[2])
+    except (TypeError, ValueError):
+        return await query.answer(query.lang["play_expired"], show_alert=True)
+    if action not in {"status", "resume", "pause", "replay", "skip", "stop", "force"}:
+        return await query.answer(query.lang["play_expired"], show_alert=True)
     qaction = len(args) == 4
     user = query.from_user.mention
 
@@ -54,7 +62,8 @@ async def _controls(_, query: types.CallbackQuery):
             return await query.answer(
                 query.lang["play_already_paused"], show_alert=True
             )
-        await anon.pause(chat_id)
+        if not await anon.pause(chat_id):
+            return await query.answer(query.lang["error_no_call"], show_alert=True)
         if qaction:
             return await query.edit_message_reply_markup(
                 reply_markup=buttons.queue_markup(chat_id, query.lang["paused"], False)
@@ -65,7 +74,8 @@ async def _controls(_, query: types.CallbackQuery):
     elif action == "resume":
         if await db.playing(chat_id):
             return await query.answer(query.lang["play_not_paused"], show_alert=True)
-        await anon.resume(chat_id)
+        if not await anon.resume(chat_id):
+            return await query.answer(query.lang["error_no_call"], show_alert=True)
         if qaction:
             return await query.edit_message_reply_markup(
                 reply_markup=buttons.queue_markup(chat_id, query.lang["playing"], True)
@@ -82,7 +92,10 @@ async def _controls(_, query: types.CallbackQuery):
         if not media or pos == -1:
             return await query.edit_message_text(query.lang["play_expired"])
 
-        m_id = queue.get_current(chat_id).message_id
+        current = queue.get_current(chat_id)
+        if not current:
+            return await query.edit_message_text(query.lang["play_expired"])
+        m_id = current.message_id
         queue.force_add(chat_id, media, remove=pos)
         try:
             await app.delete_messages(
@@ -95,11 +108,20 @@ async def _controls(_, query: types.CallbackQuery):
         msg = await app.send_message(chat_id=chat_id, text=query.lang["play_next"])
         if not media.file_path:
             media.file_path = await yt.download(media.id, video=media.video)
+            if not media.file_path:
+                queue.remove_current(chat_id)
+                return await msg.edit_text(
+                    "<b>Download failed.</b>\n\n"
+                    "YouTube blocked this cloud download. Configure "
+                    "<code>COOKIES_URL</code> and restart the bot."
+                )
         media.message_id = msg.id
         return await anon.play_media(chat_id, msg, media)
 
     elif action == "replay":
         media = queue.get_current(chat_id)
+        if not media:
+            return await query.answer(query.lang["play_expired"], show_alert=True)
         media.user = user
         await anon.replay(chat_id)
         status = query.lang["replayed"]
@@ -114,6 +136,7 @@ async def _controls(_, query: types.CallbackQuery):
         if action in ["skip", "replay", "stop"]:
             await query.message.reply_text(reply, quote=False)
             await query.message.delete()
+            return
         else:
             mtext = re.sub(
                 r"\n\n<blockquote>.*?</blockquote>",
@@ -131,7 +154,7 @@ async def _controls(_, query: types.CallbackQuery):
         pass
 
 
-@app.on_callback_query(filters.regex("help") & ~app.bl_users)
+@app.on_callback_query(filters.regex(r"^help(?:\s|$)") & ~app.bl_users)
 @lang.language()
 async def _help(_, query: types.CallbackQuery):
     data = query.data.split()
@@ -155,7 +178,7 @@ async def _help(_, query: types.CallbackQuery):
     )
 
 
-@app.on_callback_query(filters.regex("settings") & ~app.bl_users)
+@app.on_callback_query(filters.regex(r"^settings(?:\s|$)") & ~app.bl_users)
 @lang.language()
 @admin_check
 async def _settings_cb(_, query: types.CallbackQuery):

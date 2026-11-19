@@ -36,12 +36,14 @@ class Queue:
         self, chat_id: int, item: MediaItem, remove: int | bool = False
     ) -> None:
         """Replace the currently playing item with a new one."""
+        queue = self.queues[chat_id]
         self.remove_current(chat_id)
-        self.queues[chat_id].appendleft(item)
         if remove:
-            self.queues[chat_id].rotate(-remove)
-            self.queues[chat_id].popleft()
-            self.queues[chat_id].rotate(remove)
+            try:
+                queue.remove(item)
+            except ValueError:
+                pass
+        queue.appendleft(item)
 
     def get_current(self, chat_id: int) -> MediaItem | None:
         """Return the currently playing item (first in queue), if any."""

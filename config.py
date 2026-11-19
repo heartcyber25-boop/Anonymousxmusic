@@ -69,8 +69,9 @@ class Config:
         self.LANG_CODE = getenv("LANG_CODE", "en")
 
         self.COOKIES_URL = [
-            url for url in getenv("COOKIES_URL", "").split(" ")
-            if url and "batbin.me" in url
+            url
+            for url in getenv("COOKIES_URL", "").split()
+            if urlparse(url).scheme in {"http", "https"} and urlparse(url).netloc
         ]
         asset_root = "https://raw.githubusercontent.com/heartcyber25-boop/Anonymousxmusic/master/assets"
         self.DEFAULT_THUMB = _valid_url(

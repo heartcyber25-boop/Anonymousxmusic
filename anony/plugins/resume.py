@@ -19,7 +19,8 @@ async def _resume(_, m: types.Message):
     if await db.playing(m.chat.id):
         return await m.reply_text(m.lang["play_not_paused"])
 
-    await anon.resume(m.chat.id)
+    if not await anon.resume(m.chat.id):
+        return await m.reply_text(m.lang["error_no_call"])
     await m.reply_text(
         text=m.lang["play_resumed"].format(m.from_user.mention),
         reply_markup=buttons.controls(m.chat.id),

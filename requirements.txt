@@ -9,4 +9,4 @@ py-yt-search~=0.8.2
 pymongo~=4.19.0
 python-dotenv~=1.2.4
 uvloop~=0.23.0; sys_platform != 'win32'
-yt-dlp[default]>=2026.10.26
+yt-dlp[default]==2026.10.26

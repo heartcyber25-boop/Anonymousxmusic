@@ -71,6 +71,7 @@ async def stop() -> None:
         except asyncio.exceptions.CancelledError:
             pass
 
+    await anon.exit()
     await app.exit()
     await userbot.exit()
     await db.close()

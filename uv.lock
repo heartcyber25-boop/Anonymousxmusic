@@ -1439,7 +1439,7 @@ requires-dist = [
     { name = "pymongo", specifier = "~=4.19.0" },
     { name = "python-dotenv", specifier = "~=1.2.4" },
     { name = "uvloop", marker = "sys_platform != 'win32'", specifier = "~=0.23.0" },
-    { name = "yt-dlp", extras = ["default"], specifier = ">=2026.10.26" },
+    { name = "yt-dlp", extras = ["default"], specifier = "==2026.10.26" },
 ]
 
 [[package]]

@@ -91,7 +91,8 @@ install_py() {
     if uv sync --frozen -q; then
         pprint "Done.\n" "cgreen"
     else
-        pprint "Failed (continuing...)\n" "cred"
+        pprint "Failed. Fix the dependency error and run setup again.\n" "cred"
+        return 1
     fi
 }
 
