@@ -125,7 +125,12 @@ async def play_hndlr(
             if not file.file_path:
                 queue.remove_current(m.chat.id)
                 return await sent.edit_text(
-                    m.lang["error_no_file"].format(config.SUPPORT_CHAT)
+                    "<b>Download failed.</b>\n\n"
+                    "YouTube blocked this cloud download. Configure a valid "
+                    "Netscape cookies file with <code>COOKIES_URL</code> in Railway, "
+                    "then restart the bot.\n\n"
+                    f"If the issue persists, report it to the "
+                    f'<a href="{config.SUPPORT_CHAT}">support chat</a>. '
                 )
 
     await anon.play_media(chat_id=m.chat.id, message=sent, media=file)

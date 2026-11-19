@@ -8,7 +8,7 @@ import asyncio
 
 from pyrogram import errors, filters, types
 
-from anony import app, db, lang
+from anony import app, db, lang, logger
 
 
 broadcasting = asyncio.Lock()
@@ -39,19 +39,34 @@ async def _broadcast(_, message: types.Message):
     async with broadcasting:
         for chat in chats:
             try:
-                (
+                if copy:
                     await msg.copy(chat, reply_markup=msg.reply_markup)
-                    if copy
-                    else await msg.forward(chat)
-                )
+                else:
+                    await msg.forward(chat)
                 if chat in groups:
                     count += 1
                 else:
                     ucount += 1
                 await asyncio.sleep(0.2)
             except errors.FloodWait as fw:
-                await asyncio.sleep(fw.value + 10)
+                logger.warning("Broadcast FloodWait for %s: sleeping %ss", chat, fw.value)
+                await asyncio.sleep(fw.value + 2)
+                try:
+                    if copy:
+                        await msg.copy(chat, reply_markup=msg.reply_markup)
+                    else:
+                        await msg.forward(chat)
+                    if chat in groups:
+                        count += 1
+                    else:
+                        ucount += 1
+                except Exception as retry_ex:
+                    logger.warning("Broadcast retry failed for %s: %s", chat, retry_ex)
+                    if not failed:
+                        failed = open("errors.txt", "w")
+                    failed.write(f"{chat} - retry: {retry_ex}\n")
             except Exception as ex:
+                logger.warning("Broadcast failed for %s: %s", chat, ex)
                 if not failed:
                     failed = open("errors.txt", "w")
                 failed.write(f"{chat} - {ex}\n")
