@@ -170,10 +170,49 @@ class YouTube:
 
         return await asyncio.to_thread(search_sync)
 
+    async def cache_public_stream(self, track: Track) -> str | None:
+        """Cache a public SoundCloud AAC stream in a stable local file for PyTgCalls."""
+        if not self.is_soundcloud(track.url):
+            return None
+
+        def cache_sync():
+            try:
+                Path("downloads").mkdir(parents=True, exist_ok=True)
+                opts = self._ydl_options(False)
+                opts.update(
+                    {
+                        "outtmpl": "downloads/public-%(id)s.%(ext)s",
+                        "overwrites": False,
+                        "continuedl": True,
+                    }
+                )
+                with yt_dlp.YoutubeDL(opts) as ydl:
+                    info = ydl.extract_info(track.url, download=False)
+                    video_id = str(info.get("id") or track.id)
+                    existing = list(Path("downloads").glob(f"public-{video_id}.*"))
+                    if existing:
+                        return str(existing[0])
+                    ydl.download([track.url])
+                    files = list(Path("downloads").glob(f"public-{video_id}.*"))
+                    files = [p for p in files if p.suffix not in {".part", ".ytdl"}]
+                    return str(files[0]) if files else None
+            except Exception as ex:
+                logger.warning("Public stream cache failed for %s: %s", track.url, ex)
+                return None
+
+        return await asyncio.to_thread(cache_sync)
+
     async def resolve(self, track: Track, *, force: bool = False) -> str | None:
         """Resolve a track to a direct stream URL; use public SoundCloud as fallback."""
         if force:
             track.file_path = None
+
+        if self.is_soundcloud(track.url):
+            cached = await self.cache_public_stream(track)
+            if cached:
+                track.file_path = cached
+                return cached
+
         _, stream = await asyncio.to_thread(
             self._extract_stream_sync, track.url, track.video
         )
@@ -187,12 +226,16 @@ class YouTube:
         _, stream = await asyncio.to_thread(
             self._extract_stream_sync, fallback.url, False
         )
-        if not stream:
-            return None
         fallback.user = track.user
         track.__dict__.update(fallback.__dict__)
-        track.file_path = stream
-        return stream
+        cached = await self.cache_public_stream(track)
+        if cached:
+            track.file_path = cached
+            return cached
+        if stream:
+            track.file_path = stream
+            return stream
+        return None
 
     async def search(self, query: str, m_id: int, video: bool = False) -> Track | None:
         if self.is_soundcloud(query):
