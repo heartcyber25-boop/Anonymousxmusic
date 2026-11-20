@@ -101,7 +101,7 @@ class YouTube:
                 "best[height<=720][vcodec!=none]/best[height<=720]/best"
             )
         else:
-            options["format"] = "bestaudio/best"
+            options["format"] = "hls_aac_160k/hls_aac_96k/bestaudio/best"
         return options
 
     @staticmethod
@@ -170,8 +170,10 @@ class YouTube:
 
         return await asyncio.to_thread(search_sync)
 
-    async def resolve(self, track: Track) -> str | None:
+    async def resolve(self, track: Track, *, force: bool = False) -> str | None:
         """Resolve a track to a direct stream URL; use public SoundCloud as fallback."""
+        if force:
+            track.file_path = None
         _, stream = await asyncio.to_thread(
             self._extract_stream_sync, track.url, track.video
         )

@@ -137,6 +137,10 @@ class TgCall(PyTgCalls):
             await self.stop(chat_id)
             await message.edit_text(_lang["error_no_call"])
         except exceptions.NoAudioSourceFound:
+            if media.file_path:
+                media.file_path = None
+                if await yt.resolve(media, force=True):
+                    return await self.play_media(chat_id, message, media, seek_time)
             await message.edit_text(_lang["error_no_audio"])
             await self.play_next(chat_id)
         except (ConnectionError, ConnectionNotFound, TelegramServerError,
@@ -150,7 +154,10 @@ class TgCall(PyTgCalls):
             logger.exception("Unexpected playback failure in chat %s: %s", chat_id, ex)
             await self.stop(chat_id)
             try:
-                await message.edit_text(_lang["error_no_file"].format(config.SUPPORT_CHAT))
+                await message.edit_text(
+                    "<b>Stream could not be started.</b>\n\n"
+                    f'Please report it in the <a href="{config.SUPPORT_CHAT}">support chat</a>.'
+                )
             except Exception:
                 pass
 
