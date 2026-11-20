@@ -3,8 +3,6 @@
 # This file is part of ROSE MUSIC
 
 
-from pathlib import Path
-
 from pyrogram import filters, types
 
 from anony import anon, app, config, db, lang, queue, tg, yt
@@ -120,22 +118,14 @@ async def play_hndlr(
             return
 
     if not file.file_path:
-        fname = f"downloads/{file.id}.{'mp4' if video else 'webm'}"
-        if Path(fname).exists():
-            file.file_path = fname
-        else:
-            await sent.edit_text(m.lang["play_downloading"])
-            file.file_path = await yt.download(file.id, video=video)
-            if not file.file_path:
-                queue.remove_current(m.chat.id)
-                return await sent.edit_text(
-                    "<b>Download failed.</b>\n\n"
-                    "YouTube blocked this cloud download. Configure a valid "
-                    "Netscape cookies file with <code>COOKIES_URL</code> in Railway, "
-                    "then restart the bot.\n\n"
-                    f"If the issue persists, report it to the "
-                    f'<a href="{config.SUPPORT_CHAT}">support chat</a>. '
-                )
+        await sent.edit_text("<b>Connecting to a public stream...</b>")
+        if not await yt.resolve(file):
+            queue.remove_current(m.chat.id)
+            return await sent.edit_text(
+                "<b>No playable public stream was found.</b>\n\n"
+                "The bot tried YouTube and the public SoundCloud fallback. "
+                f'Please report it in the <a href="{config.SUPPORT_CHAT}">support chat</a>.'
+            )
 
     await anon.play_media(chat_id=m.chat.id, message=sent, media=file)
     if not tracks:

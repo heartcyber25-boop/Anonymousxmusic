@@ -107,13 +107,11 @@ async def _controls(_, query: types.CallbackQuery):
 
         msg = await app.send_message(chat_id=chat_id, text=query.lang["play_next"])
         if not media.file_path:
-            media.file_path = await yt.download(media.id, video=media.video)
-            if not media.file_path:
+            if not await yt.resolve(media):
                 queue.remove_current(chat_id)
                 return await msg.edit_text(
-                    "<b>Download failed.</b>\n\n"
-                    "YouTube blocked this cloud download. Configure "
-                    "<code>COOKIES_URL</code> and restart the bot."
+                    "<b>No playable public stream was found.</b>\n\n"
+                    "YouTube and the public SoundCloud fallback both failed."
                 )
         media.message_id = msg.id
         return await anon.play_media(chat_id, msg, media)

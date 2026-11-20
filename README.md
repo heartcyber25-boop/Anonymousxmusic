@@ -28,7 +28,8 @@ The internal Python package is intentionally kept as `anony` to preserve the exi
 
 - Audio playback in Telegram group video chats with `/play`.
 - Video playback with `/vplay` and force-play variants.
-- YouTube search/URL handling, playlist queueing, and yt-dlp downloads.
+- YouTube search/URL handling with direct stream resolution instead of mandatory file downloads.
+- Public SoundCloud search/HLS fallback when YouTube is blocked; `/vplay` safely falls back to audio if no public video stream is available.
 - Queue inspection, skip, pause, resume, stop, replay, seek, and loop controls.
 - Inline playback controls and per-chat settings.
 - Admin-only playback mode, authorized users, blacklist controls, and language selection.
@@ -102,7 +103,7 @@ Copy `.env.example` to `.env` for local use, or define the same variables in Rai
 | `THUMB_GEN` | No | Generate thumbnails; default `True`. |
 | `VIDEO_PLAY` | No | Enable video playback; default `True`. |
 | `LANG_CODE` | No | Default locale code; default `en`. |
-| `COOKIES_URL` | Recommended for YouTube | Space-separated `batbin.me` cookie URLs. YouTube may require exported browser cookies when it returns “Sign in to confirm you’re not a bot”; this is especially common on Railway/cloud IPs. |
+| `COOKIES_URL` | Optional | Space-separated HTTPS Netscape-cookie URLs. Direct public SoundCloud fallback works without cookies; YouTube cookies can improve YouTube availability on Railway/cloud IPs. |
 | `DEFAULT_THUMB` | No | Fallback thumbnail URL. |
 | `PING_IMG` | No | Image URL used by ping/status responses. |
 | `START_IMG` | No | Image URL used by the `/start` panel. Defaults to the ROSE MUSIC “Who am I?” starting image. |
@@ -154,8 +155,9 @@ start                Local/container startup command
 - **Missing environment variables:** compare `.env` with `.env.example`; values must be non-empty and numeric IDs must be valid integers.
 - **Logger access failure:** add the bot to the logger chat and grant the required permissions.
 - **Assistant cannot join:** ensure the string session is valid and the assistant account can join group video chats.
-- **No playback:** install/verify FFmpeg and Deno for local deployments, then check yt-dlp/network access.
-- **YouTube sign-in or bot-check error:** export a Netscape-format YouTube cookies file, upload it to a private/controlled `batbin.me` raw URL, and set `COOKIES_URL` in Railway. The bot logs the exact yt-dlp failure and returns a clean message instead of crashing.
+- **No playback:** install/verify FFmpeg and Deno for local deployments, then check yt-dlp/network access. The player first tries a direct public stream and then SoundCloud; it no longer depends on downloading a local audio file.
+- **YouTube sign-in or bot-check error:** the bot automatically tries a playable public SoundCloud result. If YouTube availability is required, export a Netscape-format cookie file and set its HTTPS URL in `COOKIES_URL`.
+- **Spotify fallback expectation:** Spotify search is metadata/catalog search only; Spotify does not provide a general full-track public stream URL for this bot. The bot does not bypass Spotify playback restrictions.
 - **MongoDB errors:** verify the URI, Atlas network access, and database user permissions.
 - **Old commands or links in a deployment:** pull the latest commit and restart the worker so the updated locales and configuration defaults load.
 

@@ -69,17 +69,133 @@ class YouTube:
                     name += ".txt"
                 async with session.get(url) as resp:
                     resp.raise_for_status()
+                    body = await resp.read()
                 with open(f"{self.cookie_dir}/{name}", "wb") as fw:
-                        fw.write(await resp.read())
+                    fw.write(body)
         logger.info(f"Cookies saved in {self.cookie_dir}.")
 
     def valid(self, url: str) -> bool:
-        return bool(re.match(self.regex, url))
+        return bool(re.match(self.regex, url)) or self.is_soundcloud(url)
 
     def invalid(self, url: str) -> bool:
         return bool(re.match(self.iregex, url))
 
+    @staticmethod
+    def is_soundcloud(url: str) -> bool:
+        return bool(re.match(r"https?://(?:www\.)?soundcloud\.com/[^\s]+", url or ""))
+
+    def _ydl_options(self, video: bool = False) -> dict:
+        options = {
+            "quiet": True,
+            "noplaylist": True,
+            "geo_bypass": True,
+            "no_warnings": True,
+            "logger": DummyLogger(),
+            "nocheckcertificate": True,
+            "cookiefile": self.get_cookies(),
+            "remote_components": ["ejs:github"],
+            "js_runtimes": {"deno": {}},
+        }
+        if video:
+            options["format"] = (
+                "best[height<=720][vcodec!=none]/best[height<=720]/best"
+            )
+        else:
+            options["format"] = "bestaudio/best"
+        return options
+
+    @staticmethod
+    def _pick_entry(info: dict) -> dict | None:
+        entries = info.get("entries") if isinstance(info, dict) else None
+        if entries:
+            return next((entry for entry in entries if entry), None)
+        return info if isinstance(info, dict) else None
+
+    def _extract_stream_sync(self, url: str, video: bool = False) -> tuple[dict | None, str | None]:
+        try:
+            with yt_dlp.YoutubeDL(self._ydl_options(video)) as ydl:
+                info = self._pick_entry(ydl.extract_info(url, download=False))
+                if not info:
+                    return None, None
+                stream = info.get("url")
+                if video and info.get("vcodec") == "none":
+                    return info, None
+                if not stream:
+                    formats = info.get("formats") or []
+                    candidates = [
+                        item for item in formats
+                        if item.get("url") and (not video or item.get("vcodec") != "none")
+                    ]
+                    if candidates:
+                        stream = candidates[-1]["url"]
+                return info, stream
+        except Exception as ex:
+            logger.warning("Direct stream extraction failed for %s: %s", url, ex)
+            return None, None
+
+    @staticmethod
+    def _track_from_info(info: dict, message_id: int, video: bool = False) -> Track:
+        duration = int(info.get("duration") or 0)
+        title = info.get("title") or "SoundCloud track"
+        thumbnail = info.get("thumbnail") or info.get("artwork_url")
+        return Track(
+            id=str(info.get("id") or "public-track"),
+            channel_name=info.get("uploader") or info.get("channel") or "",
+            duration=utils.to_seconds(str(duration)) if duration else "00:00",
+            duration_sec=duration,
+            message_id=message_id,
+            title=title[:50],
+            thumbnail=thumbnail,
+            url=info.get("webpage_url") or info.get("original_url"),
+            view_count="",
+            video=video,
+        )
+
+    async def soundcloud_search(self, query: str, message_id: int) -> Track | None:
+        def search_sync():
+            try:
+                with yt_dlp.YoutubeDL(self._ydl_options(False)) as ydl:
+                    info = ydl.extract_info(f"scsearch1:{query}", download=False)
+                    entry = self._pick_entry(info)
+                    if not entry:
+                        return None
+                    url = entry.get("webpage_url") or entry.get("original_url")
+                    if not url:
+                        return None
+                    track_info = self._pick_entry(ydl.extract_info(url, download=False))
+                    return self._track_from_info(track_info or entry, message_id, False)
+            except Exception as ex:
+                logger.warning("SoundCloud search failed for %r: %s", query, ex)
+                return None
+
+        return await asyncio.to_thread(search_sync)
+
+    async def resolve(self, track: Track) -> str | None:
+        """Resolve a track to a direct stream URL; use public SoundCloud as fallback."""
+        _, stream = await asyncio.to_thread(
+            self._extract_stream_sync, track.url, track.video
+        )
+        if stream:
+            track.file_path = stream
+            return stream
+
+        fallback = await self.soundcloud_search(track.title or track.url, track.message_id)
+        if not fallback:
+            return None
+        _, stream = await asyncio.to_thread(
+            self._extract_stream_sync, fallback.url, False
+        )
+        if not stream:
+            return None
+        fallback.user = track.user
+        track.__dict__.update(fallback.__dict__)
+        track.file_path = stream
+        return stream
+
     async def search(self, query: str, m_id: int, video: bool = False) -> Track | None:
+        if self.is_soundcloud(query):
+            info, _ = await asyncio.to_thread(self._extract_stream_sync, query, False)
+            return self._track_from_info(info, m_id, False) if info else None
         try:
             _search = VideosSearch(query, limit=1, with_live=False)
             results = await _search.next()
@@ -100,7 +216,7 @@ class YouTube:
                 view_count=data.get("viewCount", {}).get("short"),
                 video=video,
             )
-        return None
+        return await self.soundcloud_search(query, m_id)
 
     async def playlist(self, limit: int, user: str, url: str, video: bool) -> list[Track | None]:
         tracks = []
